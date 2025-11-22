@@ -1,0 +1,133 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{caption}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{basicstyle=\ttfamily\small,breaklines=true}
+\begin{document}
+\title{Lab Report: 10-Armed Nonstationary Bandit\newline (Sample-Average vs Constant-\alpha)}
+\author{\IEEEauthorblockN{Student Name}
+\IEEEauthorblockA{Course / Department\\Institution}}
+\maketitle
+\begin{abstract}
+This report documents the implementation and analysis of a 10-armed nonstationary bandit experiment implemented in `Lab_Submission_B.py`. Two action-value estimation methods are compared: the incremental sample-average estimator and a constant-step-size estimator (constant-\(\alpha\)). The experiment evaluates average reward and fraction-of-times selecting the instantaneous optimal action under an epsilon-greedy policy in a drifting (nonstationary) environment.
+\end{abstract}
+\section{Introduction}
+Multi-armed bandit problems illustrate the exploration/exploitation trade-off in reinforcement learning. When the underlying reward-generating process is nonstationary, estimators that give more weight to recent outcomes (e.g., constant-step-size) can adapt more quickly than sample averages. This lab implements both strategies and compares their performance empirically.
+\section{Experiment Setup}
+\subsection{Environment}
+- Action space: 10 independent arms.
+- True action values: vector $q_{true}$ of length 10. At each time step the environment drifts by adding Gaussian noise: $q_{true} \leftarrow q_{true} + \mathcal{N}(0,0.01)$ (element-wise).
+- Reward model: when action $a$ is chosen, reward $R \sim \mathcal N(q_{true}[a], 1.0)$.
+\subsection{Agents}
+Two agents are run in parallel inside each simulated trial (so they see the same underlying $q_{true}$ drift):
+- Sample-average agent (`q\_sa`): uses incremental sample-average update
+\begin{equation}
+q_{n+1}(a) = q_n(a) + \frac{1}{N(a)}(R - q_n(a)).
+\end{equation}
+- Constant-step-size agent (`q\_c`): uses constant-step-size update
+\begin{equation}
+q_{n+1}(a) = q_n(a) + \alpha (R - q_n(a)).
+\end{equation}
+Both agents use epsilon-greedy action selection with exploration probability `eps`.
+\subsection{Parameters}
+Default parameters in `Lab_Submission_B.py`:
+- `n_runs = 200` (number of independent trials to average)
+- `n_steps = 10000` (time steps per trial)
+- `eps = 0.1` (epsilon for epsilon-greedy)
+- `alpha = 0.1` (constant step size for `q_c`)
+\section{Implementation Notes}
+The main functions and structure in `Lab_Submission_B.py`:
+\begin{itemize}
+  \item `trial_one(n_steps, eps, alpha)`: runs one trial of length `n_steps`. Maintains `qtrue`, `q_sa`, `q_c`, and relevant counters. Records per-step rewards and whether the chosen action was the instantaneous optimal action.
+  \item `experiment(n_runs, n_steps, eps, alpha)`: runs `n_runs` trials, aggregates and averages time-series across trials, and returns averaged arrays.
+  \item Main routine: calls `experiment`, writes results to `bandit_nonstat_out.json` (fields `ar_sa`, `ao_sa`, `ar_c`, `ao_c`) and prints summary statistics for the last 100 steps.
+\end{itemize}
+\section{Key Code Excerpts}
+\subsection{Per-step updates (sample-average and constant-\(\alpha\))}
+\begin{lstlisting}
+# choose for sample-average agent
+if random.random() < eps:
+    a_sa = random.randrange(10)
+else:
+    a_sa = int(np.argmax(q_sa))
+r_sa = np.random.normal(qtrue[a_sa], 1.0)
+n_sa[a_sa] += 1
+q_sa[a_sa] += (r_sa - q_sa[a_sa]) / n_sa[a_sa]
+
+# choose for constant-alpha agent
+if random.random() < eps:
+    a_c = random.randrange(10)
+else:
+    a_c = int(np.argmax(q_c))
+r_c = np.random.normal(qtrue[a_c], 1.0)
+q_c[a_c] += alpha * (r_c - q_c[a_c])
+\end{lstlisting}
+\subsection{Averaging across runs and saving}
+\begin{lstlisting}
+ar_sa,ao_sa,ar_c,ao_c = experiment(n_runs, n_steps, eps, alpha)
+out = {'ar_sa': ar_sa.tolist(), 'ao_sa': ao_sa.tolist(), 'ar_c': ar_c.tolist(), 'ao_c': ao_c.tolist()}
+with open('bandit_nonstat_out.json','w') as f:
+    json.dump(out,f)
+\end{lstlisting}
+\section{Evaluation Metrics}
+- `ar_sa`, `ar_c`: average reward per time step for sample-average and constant-alpha agents (averaged over trials).
+- `ao_sa`, `ao_c`: fraction (0..1) of trials at each time step where the agent selected the instantaneous optimal arm (i.e., arm with highest `qtrue`).
+\section{Expected Results and Interpretation}
+- In a nonstationary environment the constant-\(\alpha\) estimator typically adapts faster to changes in `qtrue` because it weights recent rewards more heavily; thus it often achieves higher average reward than the sample-average estimator which gives equal weight to all past rewards for a given action.
+- Sample-average estimates have diminishing variance as counts increase, but their slow adaptation can be a liability under drift.
+- With `eps = 0.1` both agents retain ongoing exploration, which is important because the optimal arm can change over time.
+\section{Reproducing the Experiment and Plots}
+1. (Optional) Create a virtual environment and install dependencies:
+\begin{verbatim}
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install numpy matplotlib
+\end{verbatim}
+2. Run the experiment to generate `bandit_nonstat_out.json`:
+\begin{verbatim}
+python .\Lab_Submission_B.py
+\end{verbatim}
+3. Plot results (the repository includes `plot.py` to create smoothed plots):
+\begin{verbatim}
+python .\plot.py
+\end{verbatim}
+The `plot.py` script expects `bandit_nonstat_out.json` and produces two figures: average reward (smoothed cumulative average) and fraction optimal (smoothed instantaneous fraction). The repository may already contain `Result_1.png` and `Result_2.png` from an earlier run.
+\section{Results}
+The repository includes pre-generated figures from a representative run. These illustrate the typical behaviour described in the text.
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\\linewidth]{Result_1.png}
+\caption{Average reward (smoothed cumulative average) for sample-average ("sa") and constant-\(\\alpha\\) agents.}
+\end{figure}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.48\\linewidth]{Result_2.png}
+\caption{Fraction of times the instantaneous optimal arm is selected (smoothed) for sample-average and constant-\(\\alpha\\) agents.}
+\end{figure}
+\section{Extensions and Experiments}
+Suggested experiments to deepen the analysis:
+\begin{itemize}
+  \item Sweep `alpha` in \{0.01, 0.05, 0.1, 0.2\} and compare final average rewards.
+  \item Vary `eps` (e.g., 0.01, 0.05, 0.1) to study exploration's role under nonstationarity.
+  \item Increase the drift `qtrue += N(0,\sigma^2)` by varying `\sigma` (currently 0.01) to investigate when adaptivity matters more.
+  \item Plot per-agent learning curves with confidence intervals (std error across trials).
+\end{itemize}
+\section{Appendix: Full `Lab_Submission_B.py`}
+The full script is in the repository. For completeness, here is the entry-point summary:
+\begin{lstlisting}
+if __name__ == '__main__':
+    ar_sa,ao_sa,ar_c,ao_c = experiment(n_runs, n_steps, eps, alpha)
+    out = {'ar_sa': ar_sa.tolist(), 'ao_sa': ao_sa.tolist(), 'ar_c': ar_c.tolist(), 'ao_c': ao_c.tolist()}
+    with open('bandit_nonstat_out.json','w') as f:
+        json.dump(out, f)
+    print('saved bandit_nonstat_out.json')
+    print('avg reward last 100 steps sa=', np.mean(ar_sa[-100:]), ' const-alpha=', np.mean(ar_c[-100:]))
+    print('frac optimal last 100 steps sa=', np.mean(ao_sa[-100:]), ' const-alpha=', np.mean(ao_c[-100:]))
+\end{lstlisting}
+\section*{Conclusion}
+This lab demonstrates the practical trade-offs between sample-average and constant-step-size action-value estimation in nonstationary tasks. The constant-step-size estimator is recommended when the environment is expected to drift; sample-averages are appropriate for stationary settings where consistency is desired.
+\vfill
+\end{document}

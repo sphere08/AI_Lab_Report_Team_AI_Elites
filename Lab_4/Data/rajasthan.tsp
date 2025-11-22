@@ -1,0 +1,27 @@
+NAME : rajasthan_2
+COMMENT : list 20 tourist places in Rajasthan (alternative)
+TYPE : TSP
+DIMENSION : 20
+EDGE_WEIGHT_TYPE : EUC_2D
+NODE_COORD_SECTION
+Jaipur 26.9124 75.7873
+Udaipur 24.5854 73.7125
+Jodhpur 26.2389 73.0243
+Jaisalmer 26.9157 70.9083
+Ajmer 26.4499 74.6399
+Mount_Abu 24.5926 72.7156
+Bikaner 28.0176 73.3150
+Bharatpur 27.2152 77.5030
+Chittorgarh 24.8829 74.6230
+Bundi 25.4326 75.6483
+Kota 25.2138 75.8648
+Alwar 27.5606 76.6252
+Pushkar 26.4907 74.5552
+Bagru 26.8430 75.8327
+Mandawa 28.0624 75.1845
+Osian 26.7271 72.2431
+Sawai_Madhopur 26.0226 76.3130
+Kumbhalgarh 25.1269 73.5793
+Mount_Abu_Temple 24.5934 72.7150
+Ranthambore 26.0173 76.5026
+EOF

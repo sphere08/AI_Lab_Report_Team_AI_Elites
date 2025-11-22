@@ -1,0 +1,6 @@
+Algo,Steps,Runtime_s,MemNodes,Timeout
+Uniform Cost Search,0,2.000040,71747,True
+Best-First (Heuristic 1),0,2.000035,28573,True
+Best-First (Heuristic 2),0,2.000014,21604,True
+A* (Heuristic 1),0,2.000004,68701,True
+A* (Heuristic 2),0,2.000003,27424,True
